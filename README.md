@@ -16,27 +16,6 @@ Everything is **fully containerized with Docker**, with no need for a
 Kubernetes cluster or a dedicated VM: a machine (or server) with Docker
 installed is enough to run the whole POC end to end.
 
-## Table of contents
-
-- [Sample Demo iPaaS](#sample-demo-ipaas)
-  - [Table of contents](#table-of-contents)
-  - [Architecture](#architecture)
-  - [Deployment modes](#deployment-modes)
-  - [Repository structure](#repository-structure)
-  - [Prerequisites](#prerequisites)
-  - [Configuration (`.env`)](#configuration-env)
-  - [Setup \& launch](#setup--launch)
-    - [Step 0 — `saas` / `hybrid` mode only: get the connection token](#step-0--saas--hybrid-mode-only-get-the-connection-token)
-    - [Step 1 — Start the platform](#step-1--start-the-platform)
-    - [Step 2 — Verify the platform is up](#step-2--verify-the-platform-is-up)
-  - [Stopping the platform](#stopping-the-platform)
-  - [Going further](#going-further)
-  - [POC scope](#poc-scope)
-  - [Documentation](#documentation)
-    - [Integration Platform](#integration-platform)
-    - [API Manager (Full on-premise)](#api-manager-full-on-premise)
-    - [API Platform (SaaS)](#api-platform-saas)
-
 ## Architecture
 
 **Mode 1 - Full On-premise API Manager**
@@ -63,10 +42,8 @@ to pick depending on what you want to demonstrate:
 | **api-manager** (default, aliases: `on-prem`, `full-on-prem`) | [`apim/api-manager/`](apim/api-manager) | Full WSO2 API Manager (Publisher, DevPortal, Gateway, Admin) self-hosted on Docker, no cloud dependency. |
 | **saas** / **hybrid** | [`apim/saas-hybrid-gateway/`](apim/saas-hybrid-gateway) | Control plane (API management/publishing) hosted by WSO2's SaaS Integration Platform; only the Gateway (the component that routes API traffic) is deployed locally in Docker. |
 
-`./start.sh` and `./stop.sh` at the root drive **both** modes via the
-`--mode` flag (`api-manager` by default, or `saas` / `hybrid`). In both
-cases, the [`integrations/`](integrations) part (WSO2 Integrator) stays
-identical and starts automatically with `./start.sh`.
+A single pair of scripts, `./start.sh` and `./stop.sh`, controls whichever mode you pick with a simple `--mode` flag.
+The [`integrations/`](integrations) part (WSO2 Integrator) is the same either way and starts automatically with `./start.sh`.
 
 ## Repository structure
 
@@ -78,14 +55,14 @@ identical and starts automatically with `./start.sh`.
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) and Docker Compose v2 (`docker compose ...`)
-- [WSO2 Integrator (`bal` CLI)](https://ballerina.io/downloads/) (only
-  needed to build/modify the integrations — not required to run WSO2 API
-  Manager)
-- A bash terminal (Linux, macOS, or WSL/Git Bash on Windows)
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose v2 (Podman also works)
+- [WSO2 Integrator (`bal` CLI)](https://ballerina.io/downloads/) — only
+  needed to build/modify the integrations, not to run WSO2 API Integrator
+  ([download page](https://wso2.com/products/downloads/?product=wso2integrator))
+- A bash terminal
 - For **saas / hybrid** mode only: a WSO2 Integration Platform account with
-  a Self-Hosted Gateway created in the console, plus `curl` and `unzip`
-  (see [Step 0](#step-0--saas--hybrid-mode-only-get-the-connection-token) below)
+  a Self-Hosted Gateway created in the console — see
+  [Self-Hosted Gateway — getting started](https://wso2.com/api-platform/docs/cloud/api-platform-gateway/getting-started/)
 
 Quick check:
 
@@ -109,23 +86,24 @@ WSO2AM_GATEWAY_HTTP_PORT=8280
 HELLO_WORLD_PORT=9095
 ```
 
-`start.sh`, `stop.sh` and `integrations/build.sh` load this file
-automatically. To change the APIM version (e.g. move to 4.8.0) or rename
-the Docker network (e.g. to run several POCs in parallel without
-conflicts), just edit `.env` — no `docker-compose.yml` file needs to be
-touched.
+### Docker registry
+
+> **TODO**: this demo currently pulls images from the public registry
+> ([hub.docker.com/u/wso2](https://hub.docker.com/u/wso2)). It will move to
+> WSO2's private registry (`registry.wso2.com`, patched images, requires
+> [WSO2 access](https://updates.docs.wso2.com/en/latest/updates/customer-guide-harbor-registry/))
+> — details to follow.
 
 ## Setup & launch
 
 ### Step 0 — `saas` / `hybrid` mode only: get the connection token
 
-Skip this step if you're running the default `api-manager` mode.
-
-This step cannot be automated: the token is **single-use** and specific to
-your WSO2 Integration Platform account.
+Skip this step if you're running the default `api-manager` mode — it's
+only needed to connect the gateway to the SaaS control plane.
 
 1. In the WSO2 Integration Platform console, create (or select) a
-   **Self-Hosted Gateway**.
+   **Self-Hosted Gateway** (see the
+   [getting started guide](https://wso2.com/api-platform/docs/cloud/api-platform-gateway/getting-started/)).
 2. In the "Configure the Gateway" step, generate a registration token.
    ⚠️ Regenerating a token revokes the previous one and disconnects any
    gateway that was using it.
@@ -134,32 +112,26 @@ your WSO2 Integration Platform account.
    fill in the values shown by the console (`MOESIF_KEY`,
    `GATEWAY_CONTROLPLANE_HOST`, `GATEWAY_REGISTRATION_TOKEN`).
 
-Full details in [`apim/saas-hybrid-gateway/README.md`](apim/saas-hybrid-gateway/README.md).
-
 ### Step 1 — Start the platform
 
 A single script orchestrates the whole platform, in the mode of your choice:
 
+Full on-premise API Manager + WSO2 Integrator:
+
 ```bash
 ./start.sh                        # api-manager mode (default)
 ./start.sh --mode on-prem         # same as --mode api-manager
+```
+
+Self-Hosted Gateway (SaaS/Hybrid) + WSO2 Integrator:
+
+```bash
 ./start.sh --mode saas            # Self-Hosted Gateway + WSO2 Integration Platform mode
 ```
 
-This script:
-
-1. loads the configuration from `.env`;
-2. starts API management in the chosen mode:
-   - `api-manager` (default): creates the shared Docker network, then
-     starts WSO2 API Manager (`apim/api-manager/docker-compose.yml`);
-   - `saas` / `hybrid`: starts the Self-Hosted Gateway connected to the
-     WSO2 Integration Platform (`apim/saas-hybrid-gateway/setup.sh`) —
-     requires [Step 0](#step-0--saas--hybrid-mode-only-get-the-connection-token) to have been completed;
-3. builds the WSO2 Integrator integrations and starts their containers.
-
 ### Step 2 — Verify the platform is up
 
-**`api-manager` mode:**
+**Full on-premise (`api-manager`):**
 
 | Service | URL | Credentials |
 |---|---|---|
@@ -168,7 +140,7 @@ This script:
 | API Gateway (HTTP) | http://localhost:8280 | — |
 | WSO2 Integrator "Hello World" integration | http://localhost:9095/hello | — |
 
-**`saas` / `hybrid` mode:**
+**SaaS / Hybrid gateway:**
 
 | Service | URL |
 |---|---|
@@ -192,25 +164,6 @@ volumes, Docker images are kept for a fast restart):
 ```bash
 ./stop.sh --purge
 ```
-
-## Going further
-
-- Publish the `hello-world` integration as an API in the WSO2 Publisher,
-  using `http://hello-world:9095/hello` as the backend endpoint (both
-  services are on the same Docker network).
-- Add new WSO2 Integrator integrations in the `integrations/` workspace
-  (see the [dedicated README](integrations/README.md)).
-- Adapt the WSO2 configuration (`deployment.toml`) if POC-specific needs
-  come up (see the [dedicated README](apim/api-manager/README.md)).
-
-## POC scope
-
-This environment is designed for a functional demo/validation and **is not
-a production deployment**: single-node MySQL with default credentials,
-self-signed certificates, no high availability. A production deployment
-would need a properly secured/managed database, security hardening,
-and an adapted deployment architecture (cluster, backups, monitoring,
-etc.).
 
 ## Documentation
 
@@ -244,4 +197,21 @@ etc.).
 
 - [Website](https://wso2.com/api-platform/)
 - [Technical documentation](https://wso2.com/api-platform/docs/)
+- [Self-Hosted Gateway — getting started](https://wso2.com/api-platform/docs/cloud/api-platform-gateway/getting-started/)
+- [Setting up](https://wso2.com/api-platform/docs/cloud/api-platform-gateway/setting-up/)
+
+### Docker Registry
+
+- [Docker Registry](https://updates.docs.wso2.com/en/latest/updates/customer-guide-harbor-registry/)
+- [Download product](https://wso2.com/products/downloads/)
+- [Website](https://wso2.com/)
+
+## POC scope
+
+This environment is designed for a functional demo/validation and **is not
+a production deployment**: single-node MySQL with default credentials,
+self-signed certificates, no high availability. A production deployment
+would need a properly secured/managed database, security hardening,
+and an adapted deployment architecture (cluster, backups, monitoring,
+etc.).
 
