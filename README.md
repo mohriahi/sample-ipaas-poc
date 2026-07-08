@@ -32,6 +32,10 @@ installed is enough to run the whole POC end to end.
   - [Stopping the platform](#stopping-the-platform)
   - [Going further](#going-further)
   - [POC scope](#poc-scope)
+  - [Documentation](#documentation)
+    - [Integration Platform](#integration-platform)
+    - [API Manager (Full on-premise)](#api-manager-full-on-premise)
+    - [API Platform (SaaS)](#api-platform-saas)
 
 ## Architecture
 
@@ -207,3 +211,37 @@ self-signed certificates, no high availability. A production deployment
 would need a properly secured/managed database, security hardening,
 and an adapted deployment architecture (cluster, backups, monitoring,
 etc.).
+
+## Documentation
+
+### Integration Platform
+
+- [Website](https://wso2.com/integration-platform/)
+- [Documentation](https://wso2.com/integration-platform/docs/)
+- Deployment:
+  - [VM](https://wso2.com/integration-platform/docs/deploy/self-hosted/vm-deployment)
+  - [Container](https://wso2.com/integration-platform/docs/deploy/self-hosted/containerized-deployment)
+- [CI/CD](https://wso2.com/integration-platform/docs/deploy-operate/cicd/gitlab)
+- [Observability](https://wso2.com/integration-platform/docs/deploy-operate/observe/observability-overview)
+- [Control Plane](https://wso2.com/integration-platform/docs/manage/choosing-a-control-plane)
+- [Develop](https://wso2.com/integration-platform/docs/develop/create-integrations/create-a-new-integration)
+- [Download product](https://wso2.com/products/downloads/?product=wso2integrator)
+
+### API Manager (Full on-premise)
+
+- [Website](https://wso2.com/api-platform/api-manager/)
+- [Technical documentation](https://apim.docs.wso2.com/en/latest/)
+- [Installation](https://apim.docs.wso2.com/en/latest/install-and-setup/install-and-setup-overview/)
+- [Installation best practices](https://apim.docs.wso2.com/en/latest/install-and-setup/install/installation-prerequisites/)
+- Deployment:
+  - [VM (all-in-one)](https://apim.docs.wso2.com/en/latest/install-and-setup/setup/single-node/configuring-a-single-node/)
+  - [VM (distributed)](https://apim.docs.wso2.com/en/latest/install-and-setup/setup/single-node/configuring-a-single-node/)
+  - [Kubernetes](https://apim.docs.wso2.com/en/latest/install-and-setup/setup/kubernetes-deployment/kubernetes/kubernetes-overview/)
+  - [Docker](https://apim.docs.wso2.com/en/latest/install-and-setup/install/installation-options/#2-dockerdocker-compose)
+- [Download product](https://wso2.com/products/downloads/)
+
+### API Platform (SaaS)
+
+- [Website](https://wso2.com/api-platform/)
+- [Technical documentation](https://wso2.com/api-platform/docs/)
+
