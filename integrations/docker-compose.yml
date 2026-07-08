@@ -1,7 +1,7 @@
 services:
   hello-world:
-    # Image built locally via: bal build --cloud=docker (in hello-world/)
-    # Name/tag set by hello-world/Cloud.toml -> hello-world:latest
+    # Image built locally via: bal build --cloud=docker (in data-plane/hello-world/)
+    # Name/tag set by data-plane/hello-world/Cloud.toml -> hello-world:latest
     image: hello-world:latest
     container_name: hello-world
     hostname: hello-world

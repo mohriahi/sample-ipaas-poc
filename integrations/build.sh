@@ -13,7 +13,7 @@ set +a
 
 docker network inspect "$NETWORK_NAME" >/dev/null 2>&1 || docker network create "$NETWORK_NAME"
 
-for project in "$SCRIPT_DIR"/*/; do
+for project in "$SCRIPT_DIR"/data-plane/*/; do
     [ -f "$project/Ballerina.toml" ] || continue
     name="$(basename "$project")"
     echo "==> Building integration '$name'"
