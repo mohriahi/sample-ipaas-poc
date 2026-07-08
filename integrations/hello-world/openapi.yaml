@@ -1,0 +1,83 @@
+openapi: 3.0.1
+info:
+  title: HelloWorld
+  description: A simple greeting service.
+  version: 0.1.0
+servers:
+- url: http://hello-world:9095/hello
+  description: 
+    Backend endpoint accessible depuis WSO2 API Manager via le réseau Docker
+    partagé "ipaas-network" (nom de conteneur, pas "localhost").
+paths:
+  /:
+    get:
+      summary: Returns a generic greeting.
+      operationId: get
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GreetingResponse"
+  /{name}:
+    get:
+      summary: Returns a personalized greeting for the given person.
+      operationId: getName
+      parameters:
+      - name: name
+        in: path
+        description: name of the person to greet
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GreetingResponse"
+        "400":
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorPayload"
+components:
+  schemas:
+    ErrorPayload:
+      required:
+      - message
+      - method
+      - path
+      - reason
+      - status
+      - timestamp
+      type: object
+      properties:
+        timestamp:
+          type: string
+        status:
+          type: integer
+          format: int64
+        reason:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        method:
+          type: string
+    GreetingResponse:
+      required:
+      - message
+      - timestamp
+      type: object
+      properties:
+        message:
+          type: string
+        timestamp:
+          type: string
+      additionalProperties: false
+      description: Response returned by the greeting service.

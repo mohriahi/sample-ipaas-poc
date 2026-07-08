@@ -1,0 +1,17 @@
+# Injected by setup.sh into the extracted gateway release directory.
+#
+# Attaches gateway-runtime (the Envoy router that actually proxies traffic
+# to API backends) to the shared "ipaas-network" Docker network, so it can
+# resolve WSO2 Integrator integration containers by name (e.g.
+# http://hello-world:9095/hello) as an API backend — otherwise the gateway
+# and the integrations sit on two isolated Docker networks and any call
+# fails with "no healthy upstream".
+services:
+  gateway-runtime:
+    networks:
+      - ipaas-network
+
+networks:
+  ipaas-network:
+    name: ${NETWORK_NAME:-ipaas-network}
+    external: true

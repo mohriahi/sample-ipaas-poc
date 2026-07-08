@@ -1,0 +1,28 @@
+services:
+  hello-world:
+    # Image built locally via: bal build --cloud=docker (in hello-world/)
+    # Name/tag set by hello-world/Cloud.toml -> hello-world:latest
+    image: hello-world:latest
+    container_name: hello-world
+    hostname: hello-world
+    ports:
+      - "${HELLO_WORLD_PORT:-9095}:9095"
+    networks:
+      - ipaas-network
+    restart: unless-stopped
+
+  # Add future WSO2 Integrator integrations here, e.g.:
+  # other-integration:
+  #   image: other-integration:latest
+  #   container_name: other-integration
+  #   hostname: other-integration
+  #   ports:
+  #     - "9096:9091"
+  #   networks:
+  #     - ipaas-network
+  #   restart: unless-stopped
+
+networks:
+  ipaas-network:
+    name: ${NETWORK_NAME:-ipaas-network}
+    external: true

@@ -1,0 +1,3 @@
+[container.image]
+name = "hello-world"
+tag = "latest"

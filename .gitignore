@@ -1,0 +1,12 @@
+# WSO2 build artifacts
+integrations/*/target/
+integrations/*/generated/
+integrations/*/Dependencies.toml
+
+# WSO2 API Platform Self-Hosted Gateway (saas/hybrid mode) - downloaded release and secrets
+apim/saas-hybrid-gateway/*.zip
+apim/saas-hybrid-gateway/wso2apip-api-gateway-*/
+apim/saas-hybrid-gateway/keys.env
+
+# OS
+.DS_Store
