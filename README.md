@@ -151,6 +151,22 @@ Self-Hosted Gateway (SaaS/Hybrid) + WSO2 Integrator:
 > WSO2 certificates are self-signed by default: it's normal to get a
 > security warning in the browser on first access.
 
+### Step 3 — Connect to the Publisher portal
+
+Expose the `hello-world` WSO2 Integrator integration as an API on the
+Gateway:
+
+1. Open the Publisher portal:
+   - `api-manager` mode: https://localhost:9443/publisher
+   - `saas` / `hybrid` mode: WSO2 Integration Platform [console](https://console.bijira.dev)
+2. **Create API** → **Import Open API** → upload
+   [`integrations/data-plane/hello-world/openapi.yaml`](integrations/data-plane/hello-world/openapi.yaml)
+3. **Deploy** the API to expose it on the Gateway.
+
+> Discovery (automatically publishing new WSO2 Integrator integrations as
+> APIs) can be automated later — for now, importing the OpenAPI contract
+> is a manual, per-integration step.
+
 ## Stopping the platform
 
 ```bash

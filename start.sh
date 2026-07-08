@@ -81,10 +81,10 @@ cat <<EOF
 
  Self-Hosted Gateway (connected to the WSO2 Integration Platform)
    - URL                                   : https://localhost:8443
-   - API management (Publisher/DevPortal)  : WSO2 Integration Platform console
+   - WSO2 Integration Platform console.    : https://console.bijira.dev
 
  WSO2 Integrator integrations
-   - Hello World                         : http://localhost:$HELLO_WORLD_PORT/hello
+   - Hello World                           : http://localhost:$HELLO_WORLD_PORT/hello
 
  To stop the platform: ./stop.sh --mode $MODE
 ======================================================================
