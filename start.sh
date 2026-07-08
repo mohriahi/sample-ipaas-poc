@@ -60,7 +60,9 @@ cat <<EOF
 ======================================================================
 
  WSO2 API Manager $WSO2AM_VERSION
-   - Console (Publisher/DevPortal/Admin) : https://localhost:$WSO2AM_HTTPS_PORT/carbon
+   - Console (Publisher)                 : https://localhost:$WSO2AM_HTTPS_PORT/admin
+   - Console (DevPortal)                 : https://localhost:$WSO2AM_HTTPS_PORT/devportal
+   - Console (Admin)                     : https://localhost:$WSO2AM_HTTPS_PORT/admin
    - Default credentials                 : admin / admin
    - API Gateway (HTTPS)                 : https://localhost:$WSO2AM_GATEWAY_HTTPS_PORT
    - API Gateway (HTTP)                  : http://localhost:$WSO2AM_GATEWAY_HTTP_PORT

@@ -135,7 +135,9 @@ Self-Hosted Gateway (SaaS/Hybrid) + WSO2 Integrator:
 
 | Service | URL | Credentials |
 |---|---|---|
-| WSO2 Console (Publisher / DevPortal / Admin) | https://localhost:9443/carbon | `admin` / `admin` |
+| WSO2 Console (Publisher) | https://localhost:9443/publisher | `admin` / `admin` |
+| WSO2 Console (DevPortal ) | https://localhost:9443/devportal | `admin` / `admin` |
+| WSO2 Console (Admin) | https://localhost:9443/admin | `admin` / `admin` |
 | API Gateway (HTTPS) | https://localhost:8243 | — |
 | API Gateway (HTTP) | http://localhost:8280 | — |
 | WSO2 Integrator "Hello World" integration | http://localhost:9095/hello | — |
