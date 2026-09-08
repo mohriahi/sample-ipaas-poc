@@ -51,6 +51,9 @@ esac
 echo "==> Building and starting WSO2 Integrator integrations"
 (cd "$ROOT_DIR/integrations" && ./build.sh)
 
+echo "==> Starting WSO2 Integration Control Plane (ICP) $ICP_VERSION"
+(cd "$ROOT_DIR/integrations/control-plane" && docker compose --env-file "$ENV_FILE" up -d)
+
 case "$MODE" in
     api-manager|on-prem|full-on-prem)
 cat <<EOF
@@ -70,6 +73,10 @@ cat <<EOF
  WSO2 Integrator integrations
    - Hello World                         : http://localhost:$HELLO_WORLD_PORT/hello
 
+ WSO2 Integration Control Plane (ICP) $ICP_VERSION
+   - Console                             : https://localhost:$ICP_HTTPS_PORT
+   - Default credentials                 : admin / admin
+
  To stop the platform: ./stop.sh
 ======================================================================
 EOF
@@ -87,6 +94,10 @@ cat <<EOF
 
  WSO2 Integrator integrations
    - Hello World                           : http://localhost:$HELLO_WORLD_PORT/hello
+
+ WSO2 Integration Control Plane (ICP) $ICP_VERSION
+   - Console                               : https://localhost:$ICP_HTTPS_PORT
+   - Default credentials                   : admin / admin
 
  To stop the platform: ./stop.sh --mode $MODE
 ======================================================================

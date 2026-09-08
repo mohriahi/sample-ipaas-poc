@@ -1,0 +1,37 @@
+services:
+  icp:
+    image: wso2/wso2-integration-control-plane:${ICP_VERSION:-2.0.0}
+    container_name: icp-${ICP_VERSION:-2.0.0}
+    hostname: icp
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        config_volume="$$WORKING_DIRECTORY/wso2-config-volume"
+        if [ -d "$$config_volume" ] && [ "$$(ls -A "$$config_volume")" ]; then
+          cp -RL "$$config_volume"/* "$$WSO2_SERVER_HOME/"
+        fi
+        exec bash "$$WSO2_SERVER_HOME/bin/icp.sh" run
+    ports:
+      - "${ICP_HTTPS_PORT:-9446}:9446"    # Console (dashboard) - HTTPS
+      - "${ICP_RUNTIME_PORT:-9445}:9445"  # Runtime (Micro Integrator) registration
+    volumes:
+      # Embedded H2 database files (icp_db, credentials_db) ... without this, `docker compose down` (run by ./stop.sh) wipes all ICP data
+      - icp_data:/home/wso2carbon/wso2-integration-control-plane-${ICP_VERSION:-2.0.0}/bin/database
+    networks:
+      - ipaas-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "-k", "https://localhost:9446"]
+      interval: 10s
+      start_period: 60s
+      retries: 20
+
+volumes:
+  icp_data:
+    name: icp_data
+
+networks:
+  ipaas-network:
+    name: ${NETWORK_NAME:-ipaas-network}
+    external: true

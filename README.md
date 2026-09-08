@@ -198,6 +198,13 @@ volumes, Docker images are kept for a fast restart):
 - [Develop](https://wso2.com/integration-platform/docs/develop/create-integrations/create-a-new-integration)
 - [Download product](https://wso2.com/products/downloads/?product=wso2integrator)
 
+### Integration Control Plane
+
+- [Documentation](https://wso2.com/integration-platform/docs/manage/icp/quick-start)
+- [Installation](https://wso2.com/integration-platform/docs/manage/icp/deploy-kubernetes)
+- [Connect your runtime](https://wso2.com/integration-platform/docs/manage/icp/connect-runtime)
+- [Setup the observability](https://wso2.com/integration-platform/docs/manage/icp/observability-setup)
+
 ### API Manager (Full on-premise)
 
 - [Website](https://wso2.com/api-platform/api-manager/)

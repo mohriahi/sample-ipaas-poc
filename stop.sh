@@ -39,6 +39,9 @@ fi
 echo "==> Stopping WSO2 Integrator integrations"
 (cd "$ROOT_DIR/integrations" && docker compose --env-file "$ENV_FILE" down $PURGE_FLAG)
 
+echo "==> Stopping WSO2 Integration Control Plane (ICP)"
+(cd "$ROOT_DIR/integrations/control-plane" && docker compose --env-file "$ENV_FILE" down $PURGE_FLAG)
+
 case "$MODE" in
     api-manager|on-prem|full-on-prem)
         echo "==> Stopping WSO2 API Manager ($MODE)"

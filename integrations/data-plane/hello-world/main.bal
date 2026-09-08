@@ -1,5 +1,7 @@
 import ballerina/http;
 import ballerina/time;
+// UNCOMMENT THE BELOW LINES TO ENABLE INTEGRATION CONTROL PLANE 
+// import wso2/icp.runtime.bridge as _;
 
 # Response returned by the greeting service.
 #

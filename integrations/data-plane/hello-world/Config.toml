@@ -1,0 +1,8 @@
+# UNCOMMENT THE BELOW LINES TO ENABLE CONTROL PLANE INTEGRATION
+#[wso2.icp.runtime.bridge]
+#environment = "dev"
+#project = "test2"
+#integration = "test"
+#runtime = "hello-world-local"
+#secret = "<replace ME>"
+#heartbeatInterval = 10

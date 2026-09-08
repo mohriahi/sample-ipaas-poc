@@ -2,3 +2,8 @@
 org = "demo"
 name = "hello_world"
 version = "0.1.0"
+
+# UNCOMMENT THE BELOW LINES TO ENABLE INTEGRATION CONTROL PLANE 
+#[build-options]
+#observabilityIncluded = true
+#remoteManagement = true
