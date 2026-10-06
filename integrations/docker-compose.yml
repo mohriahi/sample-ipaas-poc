@@ -5,8 +5,11 @@ services:
     image: hello-world:latest
     container_name: hello-world
     hostname: hello-world
+    labels:
+      - "ipaas.logs=true"  # picked up by observability/promtail
     ports:
       - "${HELLO_WORLD_PORT:-9095}:9095"
+      - "${HELLO_WORLD_METRICS_PORT:-9797}:9797"  # Prometheus metrics (/metrics)
     networks:
       - ipaas-network
     restart: unless-stopped

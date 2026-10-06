@@ -29,16 +29,34 @@ services:
       args:
         WSO2AM_VERSION: ${WSO2AM_VERSION:-4.7.0}
         MYSQL_CONNECTOR_VERSION: ${MYSQL_CONNECTOR_VERSION:-8.4.0}
+        JMX_EXPORTER_VERSION: ${JMX_EXPORTER_VERSION:-1.6.0}
     image: wso2am-mysql:${WSO2AM_VERSION:-4.7.0}
     container_name: wso2am-${WSO2AM_VERSION:-4.7.0}
     hostname: wso2am
+    labels:
+      - "ipaas.logs=true"  # picked up by observability/promtail
     depends_on:
       mysql:
         condition: service_healthy
+    environment:
+      # Prometheus JMX exporter javaagent (see dockerfile/Dockerfile) —
+      # exposes JMX MBeans as Prometheus metrics on :9797.
+      JAVA_OPTS: "-javaagent:/home/wso2carbon/jmx-exporter/jmx_prometheus_javaagent-${JMX_EXPORTER_VERSION:-1.6.0}.jar=9797:/home/wso2carbon/jmx-exporter/config.yml"
+    # Enables correlation logs (per-request Correlation-ID tracing across
+    # method/external/DB calls) — writes to repository/logs/correlation.log
+    # (file-only, additivity disabled by log4j2.properties, so NOT captured
+    # by observability/promtail, which only tails stdout; see
+    # ../../observability/README.md).
+    # NOTE: must be passed as a bin/api-manager.sh argument, NOT via
+    # JAVA_OPTS — the script itself hardcodes -DenableCorrelationLogs=false
+    # later on its java command line, which would silently win over a
+    # JAVA_OPTS-supplied value (found this the hard way — verified live).
+    command: ["-DenableCorrelationLogs=true"]
     ports:
       - "${WSO2AM_HTTPS_PORT:-9443}:9443"          # Management console / Publisher / DevPortal / Admin
       - "${WSO2AM_GATEWAY_HTTPS_PORT:-8243}:8243"  # API Gateway HTTPS
       - "${WSO2AM_GATEWAY_HTTP_PORT:-8280}:8280"   # API Gateway HTTP
+      - "${WSO2AM_METRICS_PORT:-9798}:9797"        # Prometheus metrics (/metrics)
     volumes:
       - wso2am_deployment:/home/wso2carbon/wso2am-${WSO2AM_VERSION:-4.7.0}/repository/deployment/server
       - ./config/deployment.toml:/home/wso2carbon/wso2am-${WSO2AM_VERSION:-4.7.0}/repository/conf/deployment.toml

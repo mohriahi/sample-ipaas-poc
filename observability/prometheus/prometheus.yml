@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: hello-world
+    static_configs:
+      - targets: ["hello-world:9797"]
+
+  - job_name: wso2am
+    static_configs:
+      - targets: ["wso2am:9797"]

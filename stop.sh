@@ -42,6 +42,9 @@ echo "==> Stopping WSO2 Integrator integrations"
 echo "==> Stopping WSO2 Integration Control Plane (ICP)"
 (cd "$ROOT_DIR/integrations/control-plane" && docker compose --env-file "$ENV_FILE" down $PURGE_FLAG)
 
+echo "==> Stopping observability (Prometheus + Grafana)"
+(cd "$ROOT_DIR/observability" && docker compose --env-file "$ENV_FILE" down $PURGE_FLAG)
+
 case "$MODE" in
     api-manager|on-prem|full-on-prem)
         echo "==> Stopping WSO2 API Manager ($MODE)"

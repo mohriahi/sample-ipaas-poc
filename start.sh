@@ -54,6 +54,9 @@ echo "==> Building and starting WSO2 Integrator integrations"
 echo "==> Starting WSO2 Integration Control Plane (ICP) $ICP_VERSION"
 (cd "$ROOT_DIR/integrations/control-plane" && docker compose --env-file "$ENV_FILE" up -d)
 
+echo "==> Starting observability (Prometheus + Grafana)"
+(cd "$ROOT_DIR/observability" && docker compose --env-file "$ENV_FILE" up -d)
+
 case "$MODE" in
     api-manager|on-prem|full-on-prem)
 cat <<EOF
@@ -77,6 +80,10 @@ cat <<EOF
    - Console                             : https://localhost:$ICP_HTTPS_PORT
    - Default credentials                 : admin / admin
 
+ Observability
+   - Prometheus                          : http://localhost:$PROMETHEUS_PORT
+   - Grafana                             : http://localhost:$GRAFANA_PORT
+
  To stop the platform: ./stop.sh
 ======================================================================
 EOF
@@ -98,6 +105,10 @@ cat <<EOF
  WSO2 Integration Control Plane (ICP) $ICP_VERSION
    - Console                               : https://localhost:$ICP_HTTPS_PORT
    - Default credentials                   : admin / admin
+
+ Observability
+   - Prometheus                            : http://localhost:$PROMETHEUS_PORT
+   - Grafana                               : http://localhost:$GRAFANA_PORT
 
  To stop the platform: ./stop.sh --mode $MODE
 ======================================================================

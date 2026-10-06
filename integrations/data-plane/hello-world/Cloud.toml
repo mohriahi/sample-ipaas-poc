@@ -1,3 +1,10 @@
 [container.image]
 name = "hello-world"
 tag = "latest"
+
+# Bakes Config.toml into the image so metrics (and, if uncommented, ICP
+# registration) are configured the same way whether run via `bal run` or
+# as a container.
+[[container.copy.files]]
+sourceFile = "./Config.toml"
+target = "/home/ballerina/Config.toml"

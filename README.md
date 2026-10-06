@@ -52,6 +52,8 @@ The [`integrations/`](integrations) part (WSO2 Integrator) is the same either wa
 | [`apim/api-manager/`](apim/api-manager) | `api-manager` mode (aliases: `on-prem`, `full-on-prem`): "all-in-one" Docker Compose install of WSO2 API Manager backed by MySQL, with data persistence on Docker volumes. |
 | [`apim/saas-hybrid-gateway/`](apim/saas-hybrid-gateway) | `saas` / `hybrid` mode: WSO2 API Platform Self-Hosted Gateway connected to the WSO2 Integration Platform SaaS control plane. |
 | [`integrations/`](integrations) | WSO2 Integrator integrations, including a `hello-world` sample, built into Docker images (`bal build --cloud=docker`) and started via Docker Compose. |
+| [`integrations/control-plane/`](integrations/control-plane) | WSO2 Integration Control Plane (ICP), for managing/observing WSO2 Integrator integrations. |
+| [`observability/`](observability) | Prometheus + Grafana, scraping metrics from WSO2 API Manager (JMX exporter) and the WSO2 Integrator integrations (native Prometheus support). |
 
 ## Prerequisites
 

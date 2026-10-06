@@ -1,6 +1,8 @@
 import ballerina/http;
+import ballerina/log;
 import ballerina/time;
-// UNCOMMENT THE BELOW LINES TO ENABLE INTEGRATION CONTROL PLANE 
+import ballerinax/prometheus as _;
+// UNCOMMENT THE BELOW LINES TO ENABLE INTEGRATION CONTROL PLANE
 // import wso2/icp.runtime.bridge as _;
 
 # Response returned by the greeting service.
@@ -22,6 +24,7 @@ service /hello on new http:Listener(9095) {
     #
     # + return - a generic greeting message
     resource function get .() returns GreetingResponse {
+        log:printInfo("Serving generic greeting");
         return {
             message: "Hello, World!",
             timestamp: time:utcToString(time:utcNow())
@@ -33,6 +36,7 @@ service /hello on new http:Listener(9095) {
     # + name - name of the person to greet
     # + return - a personalized greeting message
     resource function get [string name]() returns GreetingResponse {
+        log:printInfo("Serving personalized greeting", name = name);
         return {
             message: string `Hello, ${name}!`,
             timestamp: time:utcToString(time:utcNow())

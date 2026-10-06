@@ -1,0 +1,118 @@
+{
+  "uid": "ipaas-poc-overview",
+  "title": "iPaaS POC Overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    { "type": "row", "title": "hello-world (WSO2 Integrator)", "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 100, "panels": [] },
+
+    { "id": 1, "type": "timeseries", "title": "Request rate",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (http_url) (rate(requests_total_value{job=\"hello-world\"}[$__rate_interval]))",
+          "legendFormat": "{{http_url}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+
+    { "id": 2, "type": "timeseries", "title": "Response time (p50 / p95)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "response_time_seconds{job=\"hello-world\", quantile=\"0.5\", timeWindow=\"300000\"}",
+          "legendFormat": "p50 {{http_url}}" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "response_time_seconds{job=\"hello-world\", quantile=\"0.95\", timeWindow=\"300000\"}",
+          "legendFormat": "p95 {{http_url}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+
+    { "id": 3, "type": "timeseries", "title": "In-progress requests",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (http_url) (inprogress_requests_value{job=\"hello-world\"})",
+          "legendFormat": "{{http_url}}" }
+      ]
+    },
+
+    { "id": 4, "type": "logs", "title": "Logs",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{container=\"hello-world\"}" }
+      ],
+      "options": { "showTime": true, "enableLogDetails": true, "sortOrder": "Descending" }
+    },
+
+    { "type": "row", "title": "wso2am (WSO2 API Manager)", "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 }, "id": 200, "panels": [] },
+
+    { "id": 5, "type": "timeseries", "title": "JVM heap memory",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "java_lang_Memory_HeapMemoryUsage_used{job=\"wso2am\"}", "legendFormat": "used" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "java_lang_Memory_HeapMemoryUsage_max{job=\"wso2am\"}", "legendFormat": "max" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] }
+    },
+
+    { "id": 6, "type": "timeseries", "title": "Thread count",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "java_lang_Threading_ThreadCount{job=\"wso2am\"}", "legendFormat": "live" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "java_lang_Threading_DaemonThreadCount{job=\"wso2am\"}", "legendFormat": "daemon" }
+      ]
+    },
+
+    { "id": 7, "type": "timeseries", "title": "HTTP request rate (Catalina)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (name) (rate(Catalina_GlobalRequestProcessor_requestCount{job=\"wso2am\"}[$__rate_interval]))",
+          "legendFormat": "{{name}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+
+    { "id": 8, "type": "timeseries", "title": "GC collections",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(java_lang_G1_Young_Generation_CollectionCount{job=\"wso2am\"}[$__rate_interval])",
+          "legendFormat": "young gen" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(java_lang_G1_Old_Generation_CollectionCount{job=\"wso2am\"}[$__rate_interval])",
+          "legendFormat": "old gen" }
+      ]
+    },
+
+    { "id": 9, "type": "logs", "title": "Logs (console only — see observability/README.md)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 34 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{container=\"wso2am-4.7.0\"}" }
+      ],
+      "options": { "showTime": true, "enableLogDetails": true, "sortOrder": "Descending" }
+    }
+  ]
+}

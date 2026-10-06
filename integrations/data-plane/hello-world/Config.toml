@@ -1,3 +1,13 @@
+# Exposes Prometheus-format metrics (Ballerina HTTP/runtime metrics) at
+# http://<host>:9797/metrics — scraped by ../../../observability/.
+[ballerina.observe]
+metricsEnabled = true
+metricsReporter = "prometheus"
+
+[ballerinax.prometheus]
+port = 9797
+host = "0.0.0.0"
+
 # UNCOMMENT THE BELOW LINES TO ENABLE CONTROL PLANE INTEGRATION
 #[wso2.icp.runtime.bridge]
 #environment = "dev"

@@ -3,7 +3,12 @@ org = "demo"
 name = "hello_world"
 version = "0.1.0"
 
-# UNCOMMENT THE BELOW LINES TO ENABLE INTEGRATION CONTROL PLANE 
-#[build-options]
-#observabilityIncluded = true
+# Required for Prometheus metrics (../../../observability/) to report
+# anything — without it, the compiler strips out metrics instrumentation
+# and /metrics stays empty even with [ballerina.observe] enabled in
+# Config.toml.
+[build-options]
+observabilityIncluded = true
+
+# UNCOMMENT THE BELOW LINE TO ENABLE INTEGRATION CONTROL PLANE REMOTE MANAGEMENT
 #remoteManagement = true

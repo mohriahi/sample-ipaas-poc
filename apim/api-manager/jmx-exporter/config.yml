@@ -1,0 +1,7 @@
+# Config for the Prometheus JMX exporter javaagent (see dockerfile/Dockerfile
+# and ../docker-compose.yml's JAVA_OPTS). Catch-all rule: exports every MBean
+# WSO2 API Manager registers, as Prometheus metrics — fine for a POC, but
+# noisy; narrow `rules` down for production use.
+# Ref: https://github.com/prometheus/jmx_exporter
+rules:
+  - pattern: ".*"

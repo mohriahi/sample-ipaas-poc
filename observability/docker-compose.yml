@@ -1,0 +1,75 @@
+services:
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v2.55.1}
+    container_name: prometheus
+    hostname: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - ipaas-network
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:${LOKI_VERSION:-3.6.1}
+    container_name: loki
+    hostname: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    networks:
+      - ipaas-network
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:${PROMTAIL_VERSION:-3.6.1}
+    container_name: promtail
+    hostname: promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./promtail/promtail-config.yaml:/etc/promtail/config.yml:ro
+      # Read-only access to the Docker daemon: promtail discovers containers
+      # labeled "ipaas.logs=true" and tails their JSON log files.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    depends_on:
+      - loki
+    networks:
+      - ipaas-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION:-11.3.0}
+    container_name: grafana
+    hostname: grafana
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - ipaas-network
+    restart: unless-stopped
+
+volumes:
+  grafana_data:
+    name: grafana_data
+  loki_data:
+    name: loki_data
+
+networks:
+  ipaas-network:
+    name: ${NETWORK_NAME:-ipaas-network}
+    external: true
