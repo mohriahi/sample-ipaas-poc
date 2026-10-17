@@ -1,6 +1,5 @@
-# Ships logs from containers labeled "ipaas.logs=true" (see
-# apim/api-manager/docker-compose.yml and integrations/docker-compose.yml)
-# to Loki, via Docker service discovery over the mounted Docker socket.
+# Collects the logs of the containers labeled "ipaas.logs=true", plus the
+# WSO2 API Manager log files, and sends them to Loki.
 server:
   http_listen_port: 9080
   grpc_listen_port: 0
@@ -23,3 +22,75 @@ scrape_configs:
       - source_labels: ["__meta_docker_container_name"]
         regex: "/(.*)"
         target_label: "container"
+
+  # Correlation logs: every step of a request, with its correlation ID.
+  # The correlation ID contains the trace ID, so these logs can be searched
+  # by trace ID: {job="wso2am-correlation"} | trace_id="<id>"
+  - job_name: wso2am-correlation
+    static_configs:
+      - targets: ["localhost"]
+        labels:
+          job: wso2am-correlation
+          container: wso2am-4.7.0
+          __path__: /var/log/wso2am/correlation.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\|(?P<correlation_id>[^|]*)\|'
+      - regex:
+          source: correlation_id
+          expression: '^00-(?P<trace_id>[0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$'
+      - structured_metadata:
+          correlation_id: correlation_id
+          trace_id: trace_id
+
+  # Other WSO2 API Manager logs. Docs:
+  # https://apim.docs.wso2.com/en/latest/monitoring/observability/observability-overview/
+
+  # API logs: one line per request/response step, for each API.
+  # Turned on by apim/api-manager/seed-hello-world-api.sh.
+  - job_name: wso2am-api-log
+    static_configs:
+      - targets: ["localhost"]
+        labels:
+          job: wso2am-api-log
+          container: wso2am-4.7.0
+          __path__: /var/log/wso2am/api.log
+    pipeline_stages:
+      - regex:
+          expression: '\{API_LOG\} (?P<api>\S+) - .*"correlationId":"(?P<correlation_id>[^"]+)".*"flow":"(?P<flow>[A-Z_]+)"'
+      - regex:
+          source: correlation_id
+          expression: '^00-(?P<trace_id>[0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$'
+      - labels:
+          api: api
+          flow: flow
+      - structured_metadata:
+          correlation_id: correlation_id
+          trace_id: trace_id
+
+  # Audit logs: who did what (logins, API / application / user changes).
+  - job_name: wso2am-audit
+    static_configs:
+      - targets: ["localhost"]
+        labels:
+          job: wso2am-audit
+          container: wso2am-4.7.0
+          __path__: /var/log/wso2am/audit.log
+
+  # Gateway access logs: one line per call received by the API gateway.
+  - job_name: wso2am-gateway-access
+    static_configs:
+      - targets: ["localhost"]
+        labels:
+          job: wso2am-gateway-access
+          container: wso2am-4.7.0
+          __path__: /var/log/wso2am/http_access.log
+
+  # Access logs of the web consoles and REST APIs (Publisher, DevPortal, Admin).
+  - job_name: wso2am-mgmt-access
+    static_configs:
+      - targets: ["localhost"]
+        labels:
+          job: wso2am-mgmt-access
+          container: wso2am-4.7.0
+          __path__: /var/log/wso2am/http_access_.*.log

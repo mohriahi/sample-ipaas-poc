@@ -39,19 +39,16 @@ services:
       mysql:
         condition: service_healthy
     environment:
-      # Prometheus JMX exporter javaagent (see dockerfile/Dockerfile) —
-      # exposes JMX MBeans as Prometheus metrics on :9797.
-      JAVA_OPTS: "-javaagent:/home/wso2carbon/jmx-exporter/jmx_prometheus_javaagent-${JMX_EXPORTER_VERSION:-1.6.0}.jar=9797:/home/wso2carbon/jmx-exporter/config.yml"
-    # Enables correlation logs (per-request Correlation-ID tracing across
-    # method/external/DB calls) — writes to repository/logs/correlation.log
-    # (file-only, additivity disabled by log4j2.properties, so NOT captured
-    # by observability/promtail, which only tails stdout; see
-    # ../../observability/README.md).
-    # NOTE: must be passed as a bin/api-manager.sh argument, NOT via
-    # JAVA_OPTS — the script itself hardcodes -DenableCorrelationLogs=false
-    # later on its java command line, which would silently win over a
-    # JAVA_OPTS-supplied value (found this the hard way — verified live).
-    command: ["-DenableCorrelationLogs=true"]
+      # Exposes API Manager metrics for Prometheus on port 9797.
+      # Not set through JAVA_OPTS on purpose — see dockerfile/Dockerfile.
+      JMX_EXPORTER_OPTS: "-javaagent:/home/wso2carbon/jmx-exporter/jmx_prometheus_javaagent-${JMX_EXPORTER_VERSION:-1.6.0}.jar=9797:/home/wso2carbon/jmx-exporter/config.yml"
+    # Startup options:
+    # - enableCorrelationLogs: log every request with its correlation ID
+    #   (repository/logs/correlation.log), so it can be followed end to end.
+    # - correlation_header_name=traceparent: reuse the trace ID as the
+    #   correlation ID, so logs and traces share the same identifier.
+    # They must be passed here: set in JAVA_OPTS, they would be ignored.
+    command: ["-DenableCorrelationLogs=true", "-Dcorrelation_header_name=traceparent"]
     ports:
       - "${WSO2AM_HTTPS_PORT:-9443}:9443"          # Management console / Publisher / DevPortal / Admin
       - "${WSO2AM_GATEWAY_HTTPS_PORT:-8243}:8243"  # API Gateway HTTPS
@@ -60,6 +57,9 @@ services:
     volumes:
       - wso2am_deployment:/home/wso2carbon/wso2am-${WSO2AM_VERSION:-4.7.0}/repository/deployment/server
       - ./config/deployment.toml:/home/wso2carbon/wso2am-${WSO2AM_VERSION:-4.7.0}/repository/conf/deployment.toml
+      - ./config/access-log.properties:/home/wso2carbon/wso2am-${WSO2AM_VERSION:-4.7.0}/repository/conf/access-log.properties:ro
+      # Log folder, also read by the observability stack to collect the logs.
+      - wso2am_logs:/home/wso2carbon/wso2am-${WSO2AM_VERSION:-4.7.0}/repository/logs
     networks:
       - ipaas-network
     restart: unless-stopped
@@ -74,6 +74,8 @@ volumes:
     name: mysql_data
   wso2am_deployment:
     name: wso2am_deployment
+  wso2am_logs:
+    name: wso2am_logs
 
 networks:
   ipaas-network:

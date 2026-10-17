@@ -54,11 +54,22 @@ echo "==> Building and starting WSO2 Integrator integrations"
 echo "==> Starting WSO2 Integration Control Plane (ICP) $ICP_VERSION"
 (cd "$ROOT_DIR/integrations/control-plane" && docker compose --env-file "$ENV_FILE" up -d)
 
-echo "==> Starting observability (Prometheus + Grafana)"
+echo "==> Starting observability (Prometheus + Loki + Tempo + Grafana)"
 (cd "$ROOT_DIR/observability" && docker compose --env-file "$ENV_FILE" up -d)
 
 case "$MODE" in
     api-manager|on-prem|full-on-prem)
+        echo "==> Waiting for WSO2 API Manager to be healthy (up to 5 min)"
+        for _ in $(seq 1 60); do
+            [[ "$(docker inspect --format '{{.State.Health.Status}}' "wso2am-$WSO2AM_VERSION" 2>/dev/null)" == "healthy" ]] && break
+            sleep 5
+        done
+        if [[ "$(docker inspect --format '{{.State.Health.Status}}' "wso2am-$WSO2AM_VERSION" 2>/dev/null)" == "healthy" ]]; then
+            echo "==> Publishing the HelloWorld API on the gateway (fronts hello-world)"
+            "$ROOT_DIR/apim/api-manager/seed-hello-world-api.sh"
+        else
+            echo "!! WSO2 API Manager not healthy yet — run apim/api-manager/seed-hello-world-api.sh once it is"
+        fi
 cat <<EOF
 
 ======================================================================
@@ -75,14 +86,16 @@ cat <<EOF
 
  WSO2 Integrator integrations
    - Hello World                         : http://localhost:$HELLO_WORLD_PORT/hello
+   - Hello World via the API Gateway     : http://localhost:$WSO2AM_GATEWAY_HTTP_PORT/hello-world/1.0/hello
 
  WSO2 Integration Control Plane (ICP) $ICP_VERSION
    - Console                             : https://localhost:$ICP_HTTPS_PORT
    - Default credentials                 : admin / admin
 
- Observability
+ Observability (metrics + logs + traces, correlated by trace ID)
+   - Grafana (dashboards "WSO2 iPaaS")   : http://localhost:$GRAFANA_PORT
    - Prometheus                          : http://localhost:$PROMETHEUS_PORT
-   - Grafana                             : http://localhost:$GRAFANA_PORT
+   - Generate demo traffic               : ./observability/generate-traffic.sh
 
  To stop the platform: ./stop.sh
 ======================================================================
@@ -106,9 +119,9 @@ cat <<EOF
    - Console                               : https://localhost:$ICP_HTTPS_PORT
    - Default credentials                   : admin / admin
 
- Observability
+ Observability (hello-world only in this mode — no local wso2am)
+   - Grafana (dashboards "WSO2 iPaaS")     : http://localhost:$GRAFANA_PORT
    - Prometheus                            : http://localhost:$PROMETHEUS_PORT
-   - Grafana                               : http://localhost:$GRAFANA_PORT
 
  To stop the platform: ./stop.sh --mode $MODE
 ======================================================================

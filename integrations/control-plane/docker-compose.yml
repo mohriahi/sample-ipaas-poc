@@ -11,12 +11,18 @@ services:
         if [ -d "$$config_volume" ] && [ "$$(ls -A "$$config_volume")" ]; then
           cp -RL "$$config_volume"/* "$$WSO2_SERVER_HOME/"
         fi
+        # Point the web console at the host port (not the default 9446),
+        # otherwise login fails from the browser.
+        public_url="https://localhost:${ICP_HTTPS_PORT:-19446}"
+        toml="$$WSO2_SERVER_HOME/conf/deployment.toml"
+        sed -i '/^backend\(GraphqlEndpoint\|AuthBaseUrl\|ObservabilityEndpoint\) = /d' "$$toml"
+        sed -i "1i backendGraphqlEndpoint = \"$$public_url/graphql\"\nbackendAuthBaseUrl = \"$$public_url/auth\"\nbackendObservabilityEndpoint = \"$$public_url/icp/observability\"" "$$toml"
         exec bash "$$WSO2_SERVER_HOME/bin/icp.sh" run
     ports:
-      - "${ICP_HTTPS_PORT:-9446}:9446"    # Console (dashboard) - HTTPS
-      - "${ICP_RUNTIME_PORT:-9445}:9445"  # Runtime (Micro Integrator) registration
+      - "${ICP_HTTPS_PORT:-19446}:9446"    # Console (dashboard) - HTTPS
+      - "${ICP_RUNTIME_PORT:-19445}:9445"  # Runtime (Micro Integrator) registration
     volumes:
-      # Embedded H2 database files (icp_db, credentials_db) ... without this, `docker compose down` (run by ./stop.sh) wipes all ICP data
+      # Keeps ICP data (embedded database) when the platform is stopped with ./stop.sh
       - icp_data:/home/wso2carbon/wso2-integration-control-plane-${ICP_VERSION:-2.0.0}/bin/database
     networks:
       - ipaas-network

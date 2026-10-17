@@ -29,13 +29,8 @@ schema_config:
         prefix: index_
         period: 24h
 
-limits_config:
-  metric_aggregation_enabled: true
-
-pattern_ingester:
-  enabled: true
-  metric_aggregation:
-    loki_address: localhost:3100
+# The "pattern ingester" from the official example is left out: it never
+# becomes ready in this setup, and it only powers an optional Grafana tab.
 
 frontend:
   encoding: protobuf

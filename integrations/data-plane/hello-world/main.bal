@@ -1,6 +1,7 @@
 import ballerina/http;
 import ballerina/log;
 import ballerina/time;
+import ballerinax/jaeger as _;
 import ballerinax/prometheus as _;
 // UNCOMMENT THE BELOW LINES TO ENABLE INTEGRATION CONTROL PLANE
 // import wso2/icp.runtime.bridge as _;

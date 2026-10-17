@@ -26,6 +26,17 @@ installed is enough to run the whole POC end to end.
 
 ![Hybrid architecture](.docs/archi-hybrid.png)
 
+Observability in a nutshell — Grafana with Loki (logs), Tempo (traces) and
+Prometheus (metrics):
+
+![LGTM stack](.docs/archi-lgtm.svg)
+
+Ready-made demo scenarios (calls through the gateway, errors, API logs,
+audit logs) are in the Postman collection
+[`postman/wso2-ipaas-demo.postman_collection.json`](postman/wso2-ipaas-demo.postman_collection.json).
+After each call, the Postman **Visualize** tab shows links that open its
+trace and logs in Grafana. See [observability/README.md](observability/README.md).
+
 In both modes, WSO2 API Manager (or the Self-Hosted Gateway) and the WSO2
 Integrator integrations share the same Docker network (`ipaas-network`),
 which lets you **publish a WSO2 Integrator integration as an API backend**
@@ -53,7 +64,7 @@ The [`integrations/`](integrations) part (WSO2 Integrator) is the same either wa
 | [`apim/saas-hybrid-gateway/`](apim/saas-hybrid-gateway) | `saas` / `hybrid` mode: WSO2 API Platform Self-Hosted Gateway connected to the WSO2 Integration Platform SaaS control plane. |
 | [`integrations/`](integrations) | WSO2 Integrator integrations, including a `hello-world` sample, built into Docker images (`bal build --cloud=docker`) and started via Docker Compose. |
 | [`integrations/control-plane/`](integrations/control-plane) | WSO2 Integration Control Plane (ICP), for managing/observing WSO2 Integrator integrations. |
-| [`observability/`](observability) | Prometheus + Grafana, scraping metrics from WSO2 API Manager (JMX exporter) and the WSO2 Integrator integrations (native Prometheus support). |
+| [`observability/`](observability) | Metrics, logs and traces for WSO2 API Manager and the WSO2 Integrator integrations, linked together by a single ID per request, with ready-made Grafana dashboards (Overview, Metrics, Logs, Traces). |
 
 ## Prerequisites
 

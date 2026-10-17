@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 500" width="1060" height="500" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>Stack LGTM de la démo iPaaS WSO2</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#111827"/></marker>
+    <style>
+      .t { font-size: 16px; font-weight: 600; fill: #111827; }
+      .s { font-size: 12px; fill: #4b5563; }
+      .l { font-size: 13px; fill: #111827; }
+      .src { fill: #fff7ed; stroke: #f97316; stroke-width: 1.5; }
+      .st  { fill: #eef2ff; stroke: #6366f1; stroke-width: 1.5; }
+      .gf  { fill: #fff7ed; stroke: #f46800; stroke-width: 2; }
+      .ln  { stroke: #111827; stroke-width: 1.6; fill: none; }
+      .lnd { stroke: #111827; stroke-width: 1.6; fill: none; stroke-dasharray: 6 4; }
+      .lb  { fill: #ffffff; }
+    </style>
+  </defs>
+  <rect width="1060" height="500" fill="#ffffff"/>
+  <text x="30" y="30" font-size="18" font-weight="700" fill="#111827">Stack LGTM — Loki · Grafana · Tempo · (Prometheus pour le « M »)</text>
+
+  <!-- Sources -->
+  <rect x="30" y="70" width="210" height="90" rx="10" class="src"/>
+  <text x="135" y="105" text-anchor="middle" class="t">WSO2 API Manager</text>
+  <text x="135" y="126" text-anchor="middle" class="s">gateway · JMX exporter</text>
+  <text x="135" y="143" text-anchor="middle" class="s">OpenTelemetry · fichiers de log</text>
+
+  <rect x="30" y="290" width="210" height="90" rx="10" class="src"/>
+  <text x="135" y="325" text-anchor="middle" class="t">WSO2 Integrator</text>
+  <text x="135" y="346" text-anchor="middle" class="s">hello-world (Ballerina)</text>
+  <text x="135" y="363" text-anchor="middle" class="s">/metrics · OTLP · logs</text>
+
+  <!-- Promtail -->
+  <rect x="400" y="215" width="130" height="50" rx="10" class="st"/>
+  <text x="465" y="245" text-anchor="middle" class="t">Promtail</text>
+
+  <!-- Stores -->
+  <rect x="620" y="55" width="170" height="80" rx="10" class="st"/>
+  <text x="705" y="90" text-anchor="middle" class="t">Grafana Tempo</text>
+  <text x="705" y="110" text-anchor="middle" class="s">traces</text>
+
+  <rect x="620" y="200" width="170" height="80" rx="10" class="st"/>
+  <text x="705" y="235" text-anchor="middle" class="t">Grafana Loki</text>
+  <text x="705" y="255" text-anchor="middle" class="s">logs</text>
+
+  <rect x="620" y="360" width="170" height="80" rx="10" class="st"/>
+  <text x="705" y="395" text-anchor="middle" class="t">Prometheus</text>
+  <text x="705" y="415" text-anchor="middle" class="s">métriques</text>
+
+  <!-- Grafana -->
+  <rect x="890" y="200" width="140" height="80" rx="10" class="gf"/>
+  <text x="960" y="245" text-anchor="middle" class="t">Grafana</text>
+
+  <!-- Traces: OTLP -->
+  <path d="M240,95 H618" class="ln" marker-end="url(#ar)"/>
+  <rect x="380" y="84" width="96" height="20" class="lb"/><text x="428" y="99" text-anchor="middle" class="l">OTLP (gRPC)</text>
+  <path d="M240,315 H300 V115 H618" class="ln" marker-end="url(#ar)"/>
+  <rect x="380" y="104" width="96" height="20" class="lb"/><text x="428" y="119" text-anchor="middle" class="l">OTLP (gRPC)</text>
+
+  <!-- Logs: files/stdout → Promtail → Loki -->
+  <path d="M240,140 H350 V232 H398" class="ln" marker-end="url(#ar)"/>
+  <path d="M240,345 H350 V250 H398" class="ln" marker-end="url(#ar)"/>
+  <text x="358" y="190" class="s">stdout</text>
+  <text x="358" y="205" class="s">+ fichiers de log</text>
+  <path d="M530,240 H618" class="ln" marker-end="url(#ar)"/>
+  <rect x="553" y="229" width="44" height="20" class="lb"/><text x="575" y="244" text-anchor="middle" class="l">push</text>
+
+  <!-- Metrics: Prometheus scrapes -->
+  <path d="M705,440 V470 H15 V115 H28" class="ln" marker-end="url(#ar)"/>
+  <path d="M15,335 H28" class="ln" marker-end="url(#ar)"/>
+  <rect x="300" y="460" width="120" height="20" class="lb"/><text x="360" y="475" text-anchor="middle" class="l">scrape /metrics</text>
+
+  <!-- Tempo → Prometheus: span metrics -->
+  <path d="M620,125 H600 V390 H618" class="lnd" marker-end="url(#ar)"/>
+  <text x="592" y="314" text-anchor="end" class="s">remote_write</text>
+  <text x="592" y="329" text-anchor="end" class="s">span metrics</text>
+
+  <!-- Datasources → Grafana -->
+  <path d="M790,95 H840 V400 H790" class="ln"/>
+  <path d="M790,240 H840" class="ln"/>
+  <path d="M840,240 H888" class="ln" marker-end="url(#ar)"/>
+  <text x="960" y="192" text-anchor="middle" class="s">3 datasources</text>
+</svg>

@@ -1,12 +1,25 @@
-# Exposes Prometheus-format metrics (Ballerina HTTP/runtime metrics) at
-# http://<host>:9797/metrics — scraped by ../../../observability/.
+# Observability for hello-world:
+# - metrics, read by Prometheus at http://<host>:9797/metrics
+# - traces, sent to Tempo. Despite its name, the "jaeger" module sends
+#   standard OpenTelemetry traces and continues the trace started by the
+#   API gateway, so a call through the gateway shows up as a single trace.
 [ballerina.observe]
 metricsEnabled = true
 metricsReporter = "prometheus"
+tracingEnabled = true
+tracingProvider = "jaeger"
 
 [ballerinax.prometheus]
 port = 9797
 host = "0.0.0.0"
+
+[ballerinax.jaeger]
+agentHostname = "tempo"
+agentPort = 4317
+samplerType = "const"
+samplerParam = 1.0
+reporterFlushInterval = 1000
+reporterBufferSize = 10000
 
 # UNCOMMENT THE BELOW LINES TO ENABLE CONTROL PLANE INTEGRATION
 #[wso2.icp.runtime.bridge]

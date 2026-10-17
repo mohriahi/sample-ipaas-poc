@@ -1,0 +1,747 @@
+{
+  "info": {
+    "name": "WSO2 iPaaS — démo observabilité",
+    "description": "Scénarios live pour la démo : appels via la gateway WSO2 API Manager vers l'intégration hello-world, erreurs, API Logs, audit logs.\n\nChaque appel gateway affiche dans l'onglet **Visualize** des liens Grafana vers SA trace et SES logs (trace ID ou correlation ID), et les écrit dans la console Postman.\n\nPrérequis : `./start.sh` (publie l'API HelloWorld et active les API Logs). Les variables de la collection (onglet Variables) pointent sur localhost avec les ports du `.env`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "gateway",
+      "value": "http://localhost:8280"
+    },
+    {
+      "key": "apim",
+      "value": "https://localhost:9443"
+    },
+    {
+      "key": "helloWorld",
+      "value": "http://localhost:9095"
+    },
+    {
+      "key": "grafana",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "otlp",
+      "value": "http://localhost:4318"
+    },
+    {
+      "key": "prometheus",
+      "value": "http://localhost:19090"
+    },
+    {
+      "key": "apimUser",
+      "value": "admin"
+    },
+    {
+      "key": "apimPassword",
+      "value": "admin"
+    },
+    {
+      "key": "name",
+      "value": "World"
+    },
+    {
+      "key": "apiId",
+      "value": ""
+    },
+    {
+      "key": "clientId",
+      "value": ""
+    },
+    {
+      "key": "clientSecret",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "appId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Correlation ID returned by the gateway (wso2am runs with",
+          "// -Dcorrelation_header_name=traceparent, so it echoes it in \"traceparent\").",
+          "const corr = pm.response.headers.get('traceparent');",
+          "const traceId = pm.variables.get('traceId');                // set by folder \"1\" pre-request",
+          "const g = pm.collectionVariables.get('grafana');",
+          "if (!corr) { return; }                                       // not a gateway response",
+          "// Id to look up: the trace ID when we sent one, else the correlation ID (UUID)",
+          "const id = traceId || corr;",
+          "const range = 'from=now-1h&to=now';",
+          "const explore = g + '/explore?schemaVersion=1&panes=' + encodeURIComponent(JSON.stringify({",
+          "    a: { datasource: 'tempo', range: { from: 'now-1h', to: 'now' },",
+          "         queries: [{ refId: 'A', datasource: { type: 'tempo', uid: 'tempo' }, queryType: 'traceql',",
+          "                     query: traceId ? traceId : '{span.\"span.activity.id\"=\"urn:uuid:' + corr + '\"}' }] } }));",
+          "const links = {",
+          "    'Trace (Tempo, Explore)': explore,",
+          "    'Dashboard Traces (id)': g + '/d/wso2-traces?' + range + '&var-id=' + encodeURIComponent(id),",
+          "    'Dashboard Logs (id)': g + '/d/wso2-logs?' + range + '&var-id=' + encodeURIComponent(id),",
+          "    'Dashboard Overview': g + '/d/ipaas-poc-overview?from=now-15m&to=now'",
+          "};",
+          "console.log('status=' + pm.response.code, '| trace_id=' + (traceId || '(généré par la gateway)'), '| correlation_id=' + corr);",
+          "Object.entries(links).forEach(([k, v]) => console.log(k + ': ' + v));",
+          "pm.visualizer.set(`",
+          "  <div style=\"font-family:sans-serif;font-size:14px\">",
+          "    <p><b>HTTP {{status}}</b> — trace_id: <code>{{traceId}}</code><br>correlation_id: <code>{{corr}}</code></p>",
+          "    <p style=\"color:#666\">Tempo indexe la trace pour la recherche en ~30 s (le lien Explore par trace ID marche tout de suite).</p>",
+          "    <ul>{{#each links}}<li><a href=\"{{this.url}}\" target=\"_blank\">{{this.name}}</a></li>{{/each}}</ul>",
+          "  </div>`,",
+          "  { status: pm.response.code, traceId: traceId || '(généré par la gateway — voir correlation_id)', corr: corr,",
+          "    links: Object.entries(links).map(([name, url]) => ({ name, url })) });"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Via la gateway — appel tracé (traceparent)",
+      "description": "Client instrumenté : chaque requête envoie un traceparent W3C et publie son span client (postman-client) dans Tempo. Trace complète postman-client → wso2am-gateway → hello-world.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// New W3C traceparent per request → same trace ID in Tempo, correlation.log,",
+              "// api.log, gateway access log and hello-world logs.",
+              "const hex = n => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join('');",
+              "const traceId = hex(32), spanId = hex(16);",
+              "pm.variables.set('traceId', traceId);",
+              "pm.variables.set('spanId', spanId);",
+              "pm.variables.set('startMs', Date.now());",
+              "pm.request.headers.upsert({ key: 'traceparent', value: `00-${traceId}-${spanId}-01` });"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Send the client span (\"postman-client\") to Tempo (OTLP/HTTP) — without it",
+              "// Grafana shows the trace as \"root span not yet received\".",
+              "const start = pm.variables.get('startMs'), end = Date.now(), code = pm.response.code;",
+              "const traceId = pm.variables.get('traceId'), spanId = pm.variables.get('spanId');",
+              "pm.variables.unset('traceId');   // so later, untraced requests don't reuse it",
+              "pm.sendRequest({",
+              "    url: pm.collectionVariables.get('otlp') + '/v1/traces', method: 'POST',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: { mode: 'raw', raw: JSON.stringify({ resourceSpans: [{",
+              "        resource: { attributes: [{ key: 'service.name', value: { stringValue: 'postman-client' } }] },",
+              "        scopeSpans: [{ spans: [{",
+              "            traceId: traceId, spanId: spanId,",
+              "            name: pm.request.method + ' ' + pm.request.url.getPath(), kind: 3,",
+              "            startTimeUnixNano: String(start) + '000000', endTimeUnixNano: String(end) + '000000',",
+              "            status: { code: code >= 400 ? 2 : 1 },",
+              "            attributes: [",
+              "                { key: 'http.method', value: { stringValue: pm.request.method } },",
+              "                { key: 'http.url', value: { stringValue: pm.request.url.toString() } },",
+              "                { key: 'http.status_code', value: { intValue: code } } ] }] }] }] }) }",
+              "}, err => { if (err) console.log('OTLP export failed (Tempo up?)', err); });"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "Hello (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway}}/hello-world/1.0/hello",
+            "description": "Appel nominal : gateway → hello-world."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Hello {name} (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway}}/hello-world/1.0/hello/{{name}}",
+            "description": "Ressource paramétrée (modifier la variable `name`)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ressource inconnue → 404 backend",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway}}/hello-world/1.0/does-not-exist",
+            "description": "La gateway route (ressource /*) mais hello-world répond 404 : erreur visible dans les métriques par code HTTP, la table « Failed requests » et les logs."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 from backend', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Méthode non autorisée → 405 gateway",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{gateway}}/hello-world/1.0/hello",
+            "description": "Seul GET est défini sur l'API : la gateway refuse elle-même (pas d'appel backend)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('405 from gateway', () => pm.response.to.have.status(405));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API inconnue → 404 gateway",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway}}/unknown-api/1.0/x",
+            "description": "Aucune API sur ce contexte : 404 renvoyé par la gateway."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 from gateway', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Via la gateway — sans traceparent (correlation ID)",
+      "description": "Client non instrumenté : la gateway démarre la trace et génère un correlation ID (UUID) renvoyé dans l'en-tête `traceparent` de la réponse. Les liens retrouvent la trace via span.activity.id et les logs via ce correlation ID.",
+      "item": [
+        {
+          "name": "Hello sans traceparent (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway}}/hello-world/1.0/hello/{{name}}",
+            "description": "Copier le correlation ID affiché (Visualize) dans le champ « Trace ID or Correlation ID »."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Direct hello-world (hors gateway)",
+      "description": "Pour comparer : appel direct de l'intégration, sans passer par WSO2 API Manager (trace hello-world seule, pas d'API Log ni de correlation log).",
+      "item": [
+        {
+          "name": "Hello direct (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{helloWorld}}/hello",
+            "description": "Bypass de la gateway."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. API Logs (API REST DevOps)",
+      "description": "Niveau d'API Logs par API, à chaud (sans redémarrage). BASIC = contexte, ressource, correlationId, flux, IP, méthode, statut ; STANDARD = + headers ; FULL = + payload. Résultat : panel « API Logs » du dashboard Logs.",
+      "item": [
+        {
+          "name": "Lister les niveaux (récupère apiId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apim}}/api/am/devops/v0/tenant-logs/carbon.super/apis",
+            "description": "Récupère l'id de l'API HelloWorld dans la variable `apiId`.",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{apimUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{apimPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const api = pm.response.json().apis.find(a => a.context === '/hello-world/1.0' && a.resourceMethod === null);",
+                  "pm.test('HelloWorld API found', () => pm.expect(api).to.be.ok);",
+                  "pm.collectionVariables.set('apiId', api.apiId);",
+                  "console.log('apiId=' + api.apiId + ' logLevel=' + api.logLevel);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Passer en FULL (headers + payload)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apim}}/api/am/devops/v0/tenant-logs/carbon.super/apis/{{apiId}}",
+            "description": "Relancer ensuite un appel du dossier 1 : api.log contient alors headers et payload.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"logLevel\": \"FULL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{apimUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{apimPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('log level updated', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revenir en BASIC",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apim}}/api/am/devops/v0/tenant-logs/carbon.super/apis/{{apiId}}",
+            "description": "Niveau par défaut de la démo (pas de headers/payload dans les logs).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"logLevel\": \"BASIC\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{apimUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{apimPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('log level updated', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Audit logs (DevPortal)",
+      "description": "Actions tracées dans audit.log (panel « Audit logs » du dashboard Logs) : création puis suppression d'une application. À exécuter dans l'ordre.",
+      "item": [
+        {
+          "name": "a. Enregistrer un client OAuth (DCR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apim}}/client-registration/v0.17/register",
+            "description": "Dynamic Client Registration (Basic admin).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"callbackUrl\": \"www.example.com\",\n  \"clientName\": \"postman_demo\",\n  \"owner\": \"admin\",\n  \"grantType\": \"password refresh_token\",\n  \"saasApp\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{apimUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{apimPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('clientId', b.clientId);",
+                  "pm.collectionVariables.set('clientSecret', b.clientSecret);",
+                  "pm.test('client registered', () => pm.expect(b.clientId).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "b. Obtenir un token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('accessToken', pm.response.json().access_token);",
+                  "pm.test('token received', () => pm.expect(pm.response.json().access_token).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{apim}}/oauth2/token",
+            "description": "Password grant, scopes DevPortal applications.",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{clientId}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{clientSecret}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "username",
+                  "value": "{{apimUser}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{apimPassword}}"
+                },
+                {
+                  "key": "scope",
+                  "value": "apim:subscribe apim:app_manage"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "c. Créer une application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apim}}/api/am/devportal/v3/applications",
+            "description": "→ ligne d'audit « created Application ».",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"demo-audit-{{$timestamp}}\",\n  \"throttlingPolicy\": \"Unlimited\",\n  \"description\": \"Cr\\u00e9\\u00e9e depuis Postman pour la d\\u00e9mo des audit logs\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('appId', pm.response.json().applicationId);",
+                  "pm.test('application created', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "d. Supprimer l'application",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{apim}}/api/am/devportal/v3/applications/{{appId}}",
+            "description": "→ ligne d'audit « deleted Application ».",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('application deleted', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Endpoints d'observabilité",
+      "description": "Les sources brutes, pour montrer d'où viennent les données.",
+      "item": [
+        {
+          "name": "Métriques hello-world (Ballerina)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:9797/metrics",
+            "description": "Format Prometheus."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Métriques WSO2 API Manager (JMX exporter)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:9798/metrics",
+            "description": "Format Prometheus."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Prometheus — cibles scrapées",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{prometheus}}/api/v1/targets",
+            "description": "hello-world et wso2am doivent être « up »."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('all targets up', () => pm.response.json().data.activeTargets.forEach(t => pm.expect(t.health).to.eql('up')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tempo — prêt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:3200/ready",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ready', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Loki — prêt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:3100/ready",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ready', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

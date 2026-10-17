@@ -3,12 +3,12 @@ org = "demo"
 name = "hello_world"
 version = "0.1.0"
 
-# Required for Prometheus metrics (../../../observability/) to report
-# anything — without it, the compiler strips out metrics instrumentation
-# and /metrics stays empty even with [ballerina.observe] enabled in
-# Config.toml.
+# Needed for hello-world to produce metrics and traces.
 [build-options]
 observabilityIncluded = true
+# Keep the library versions locked in Dependencies.toml: newer versions
+# make the tracing module crash at startup.
+sticky = true
 
 # UNCOMMENT THE BELOW LINE TO ENABLE INTEGRATION CONTROL PLANE REMOTE MANAGEMENT
 #remoteManagement = true

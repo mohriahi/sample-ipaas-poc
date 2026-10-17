@@ -17,7 +17,11 @@ repo root. To run it standalone:
 docker compose --env-file ../../.env up -d
 ```
 
-- Console: https://localhost:9446 (default port, see `ICP_HTTPS_PORT` in `.env`)
+- Console: https://localhost:19446 (see `ICP_HTTPS_PORT` in `.env`). Port
+  19446 is used instead of the usual 9446 to avoid clashing with other
+  WSO2 products running locally.
+- Integrations running in Docker reach ICP at `icp:9445`; port 19445
+  (`ICP_RUNTIME_PORT`) is only for integrations running outside Docker.
 - Default credentials: `admin` / `admin` — change before any non-evaluation use.
 - Data (organizations, projects, environments, components, users) persists
   across `./stop.sh` / `./start.sh` in the `icp_data` Docker volume. It is
@@ -48,7 +52,7 @@ secret = "<kid>.<secret>"   # from ICP console: Project > Component > "connect a
 
 `environment`/`project`/`integration`/`secret` must match a runtime
 connection created via the ICP console's "connect a runtime" flow
-(https://localhost:9446). `runtime` is self-chosen and not required to match
+(https://localhost:19446). `runtime` is self-chosen and not required to match
 anything — see [../data-plane/hello-world/Config.toml](../data-plane/hello-world/Config.toml)
 for a working example.
 

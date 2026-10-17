@@ -3,8 +3,15 @@ services:
     image: prom/prometheus:${PROMETHEUS_VERSION:-v2.55.1}
     container_name: prometheus
     hostname: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      # Receives the metrics that Tempo computes from the traces.
+      - --web.enable-remote-write-receiver
+      # Lets a point on a chart link to the trace behind it.
+      - --enable-feature=exemplar-storage
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     networks:
@@ -25,6 +32,24 @@ services:
       - ipaas-network
     restart: unless-stopped
 
+  tempo:
+    image: grafana/tempo:${TEMPO_VERSION:-3.1.0}
+    container_name: tempo
+    hostname: tempo
+    command: -target=all -config.file=/etc/tempo.yaml
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "${TEMPO_PORT:-3200}:3200"   # Tempo query API
+      - "${OTLP_GRPC_PORT:-4317}:4317"  # OTLP gRPC (wso2am, hello-world)
+      - "${OTLP_HTTP_PORT:-4318}:4318"  # OTLP HTTP
+    depends_on:
+      - prometheus
+    networks:
+      - ipaas-network
+    restart: unless-stopped
+
   promtail:
     image: grafana/promtail:${PROMTAIL_VERSION:-3.6.1}
     container_name: promtail
@@ -32,10 +57,12 @@ services:
     command: -config.file=/etc/promtail/config.yml
     volumes:
       - ./promtail/promtail-config.yaml:/etc/promtail/config.yml:ro
-      # Read-only access to the Docker daemon: promtail discovers containers
-      # labeled "ipaas.logs=true" and tails their JSON log files.
+      # Read-only access to Docker, to find the containers labeled
+      # "ipaas.logs=true" and collect their logs.
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      # WSO2 API Manager log files (correlation, API, audit and access logs).
+      - wso2am_logs:/var/log/wso2am:ro
     depends_on:
       - loki
     networks:
@@ -59,15 +86,24 @@ services:
     depends_on:
       - prometheus
       - loki
+      - tempo
     networks:
       - ipaas-network
     restart: unless-stopped
 
 volumes:
+  prometheus_data:
+    name: prometheus_data
   grafana_data:
     name: grafana_data
   loki_data:
     name: loki_data
+  tempo_data:
+    name: tempo_data
+  wso2am_logs:
+    # Created by apim/api-manager, only read here.
+    name: wso2am_logs
+    external: true
 
 networks:
   ipaas-network:

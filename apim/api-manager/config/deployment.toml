@@ -175,6 +175,23 @@ allow_methods = ["GET","PUT","POST","DELETE","PATCH","OPTIONS"]
 allow_headers = ["authorization","Access-Control-Allow-Origin","Content-Type","SOAPAction","apikey","Internal-Key"]
 allow_credentials = false
 
+# Send the gateway's traces to Tempo, so a call through the gateway and into
+# hello-world shows up as a single trace.
+# Keep this block after the other [apim.*] blocks (WSO2 requirement).
+# Docs: https://apim.docs.wso2.com/en/latest/monitoring/observability/traces/monitoring-with-opentelemetry/
+[apim.open_telemetry]
+remote_tracer.enable = true
+remote_tracer.name = "otlp"
+remote_tracer.url = "http://tempo:4317"
+
+[[apim.open_telemetry.resource_attributes]]
+name = "service.name"
+value = "wso2am-gateway"
+
+[[apim.open_telemetry.resource_attributes]]
+name = "deployment.environment"
+value = "ipaas-poc"
+
 #[apim.throttling]
 #enable_data_publishing = true
 #enable_policy_deploy = true

@@ -1,7 +1,7 @@
 # WSO2 build artifacts
 integrations/data-plane/*/target/
 integrations/data-plane/*/generated/
-integrations/data-plane/*/Dependencies.toml
+# Dependencies.toml is committed on purpose: it locks hello-world's library versions.
 
 # WSO2 API Platform Self-Hosted Gateway (saas/hybrid mode) - downloaded release and secrets
 apim/saas-hybrid-gateway/*.zip
